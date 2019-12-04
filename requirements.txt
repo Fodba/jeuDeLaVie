@@ -1,1 +1,10 @@
+# à installer avec apt
+#----------------------
+# python3-tk
+
+
+
+# à installer avec pip
+#----------------------
 numpy==1.16.5
+

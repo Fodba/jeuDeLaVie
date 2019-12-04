@@ -1,325 +1,334 @@
-from tkinter import *
+import tkinter as tk
+import numpy as np
+import time
 
-def damier(): # fonction dessinant le tableau
-    ligne_vert()
-    ligne_hor()
+# CONSTANTES
+HEIGHT = 1000
+WIDTH = 1000
+NB_CELLULES_X = 25
+NB_CELLULES_Y = 25
+TAILLE_X = WIDTH / NB_CELLULES_X
+TAILLE_Y = HEIGHT / NB_CELLULES_Y
+VITESSE = 250
 
-def ligne_vert():
+# VARIABLES GLOBALES
+flag = 0
+compteur_generation = 0
+compteur_population = 0
+
+
+# FONCTIONS
+def colorie(tableau, canevas):
+    '''
+    Affiche une case blanche ou noir selon que la cellule soit vivante ou morte
+    :param tableau: tableau des cellules vivantes
+    :return:
+    '''
+    h = 0
+    for ind, row in enumerate(tableau):
+        l = 0
+        for idx, c in enumerate(row):
+            if c == 1:
+                X = TAILLE_X * idx
+                Y = TAILLE_Y * ind
+                canevas.create_rectangle(X, Y, X + TAILLE_X, Y + TAILLE_Y, fill='black')
+    canevas.pack()
+
+
+def ligne_vertical(canevas):
+    '''
+    Crée les lignes verticales
+    :return: None
+    '''
     c_x = 0
-    while c_x != width:
-        can1.create_line(c_x, 0, c_x, height, width=1, fill='black')
-        c_x += c
+    while c_x < WIDTH:
+        canevas.create_line(c_x, 0, c_x, HEIGHT, fill='black')
+        c_x += TAILLE_X
 
-def ligne_hor():
+
+def ligne_horizontal(canevas):
+    '''
+    Crée les lignes verticales
+    :return: None
+    '''
     c_y = 0
-    while c_y != height:
-        can1.create_line(0,c_y,width,c_y,width=1,fill='black')
-        c_y += c
+    while c_y < HEIGHT:
+        canevas.create_line(0, c_y, WIDTH, c_y, fill='black')
+        c_y += TAILLE_Y
 
 
-def click_gauche(event): # fonction rendant vivante la cellule cliquée
-    x = event.x - (event.x % c)
-    y = event.y - (event.y % c)
-    can1.create_rectangle(x,y,x+c,y+c,fill='black')
-    dico_case[x,y] = 1
-
-def click_droit(event): # fonction rendant vivante la cellule cliquée
-    x = event.x - (event.x % c)
-    y = event.y - (event.y % c)
-    can1.create_rectangle(x,y,x+c,y+c,fill='white')
-    dico_case[x,y] = 0
+def damier(canevas):
+    '''
+    dessine un damier dans la surface
+    :return:
+    '''
+    canevas.delete(tk.ALL)
+    ligne_horizontal(canevas)
+    ligne_vertical(canevas)
+    canevas.pack()
 
 
+def click_gauche(event):  # fonction rendant vivante la cellule cliquée
+    global canevas1, tableau, compteur_population
+    x = event.x - (event.x % TAILLE_X)
+    y = event.y - (event.y % TAILLE_Y)
+    X = int(event.x / TAILLE_X)
+    Y = int(event.y / TAILLE_Y)
+    canevas1.create_rectangle(x, y, x + TAILLE_X, y + TAILLE_Y, fill='black')
+    tableau[Y, X] = 1
+    print(X, ' - ', Y)
+    compteur_population = np.sum(tableau)
+    chaine2.configure(text="Population: {}".format(compteur_population))
 
 
-def change_vit(event): # fonction pour changer la vitesse
-    global vitesse
-    vitesse = int(eval(entree.get()))
-    print(vitesse)
+def click_droit(event):  # fonction rendant vivante la cellule cliquée
+    global canevas1, tableau, compteur_population
+    x = event.x - (event.x % TAILLE_X)
+    y = event.y - (event.y % TAILLE_Y)
+    X = int(event.x / TAILLE_X)
+    Y = int(event.y / TAILLE_Y)
+    canevas1.create_rectangle(x, y, x + TAILLE_X, y + TAILLE_Y, fill='white')
+    tableau[Y, X] = 0
+    print(X, ' - ', Y)
+    compteur_population = np.sum(tableau)
+    chaine2.configure(text="Population: {}".format(compteur_population))
 
 
+def get_voisins(tableau):
+    '''
+    definit le nombre de voisins immediat pour chaque cellule du tableau
+    :param tableau: tableau à analyser
+    :return:
+    '''
+    tab_voisin = np.zeros((NB_CELLULES_X, NB_CELLULES_Y))
+    for idx, row in enumerate(tableau):  # idx = axe y
+        for index, cell in enumerate(row):  # index = axe x
+
+            # CAS PARTICULIER
+            # Les Coins
+            if idx == 0 and index == 0:
+                if tableau[idx + 1, index] == 1:
+                    tab_voisin[idx, index] += 1
+
+                if tableau[idx + 1, index + 1] == 1:
+                    tab_voisin[idx, index] += 1
+
+                if tableau[idx, index + 1] == 1:
+                    tab_voisin[idx, index] += 1
+
+            elif idx == NB_CELLULES_Y - 1 and index == 0:
+                if tableau[idx - 1, index] == 1:
+                    tab_voisin[idx, index] += 1
+
+                if tableau[idx - 1, index + 1] == 1:
+                    tab_voisin[idx, index] += 1
+
+                if tableau[idx, index + 1] == 1:
+                    tab_voisin[idx, index] += 1
+
+            elif index == NB_CELLULES_X - 1 and idx == 0:
+                if tableau[idx, index - 1] == 1:
+                    tab_voisin[idx, index] += 1
+
+                if tableau[idx + 1, index - 1] == 1:
+                    tab_voisin[idx, index] += 1
+
+                if tableau[idx + 1, index] == 1:
+                    tab_voisin[idx, index] += 1
+
+            elif index == NB_CELLULES_X - 1 and idx == NB_CELLULES_Y - 1:
+                if tableau[idx - 1, index - 1] == 1:
+                    tab_voisin[idx, index] += 1
+
+                if tableau[idx - 1, index] == 1:
+                    tab_voisin[idx, index] += 1
+
+                if tableau[idx, index - 1] == 1:
+                    tab_voisin[idx, index] += 1
+
+            # Les bordures
+            elif index == 0:
+                if tableau[idx - 1, index] == 1:
+                    tab_voisin[idx, index] += 1
+                if tableau[idx + 1, index] == 1:
+                    tab_voisin[idx, index] += 1
+                if tableau[idx - 1, index + 1] == 1:
+                    tab_voisin[idx, index] += 1
+                if tableau[idx, index + 1] == 1:
+                    tab_voisin[idx, index] += 1
+                if tableau[idx + 1, index + 1] == 1:
+                    tab_voisin[idx, index] += 1
+
+            elif index == NB_CELLULES_X - 1:
+                if tableau[idx - 1, index - 1] == 1:
+                    tab_voisin[idx, index] += 1
+                if tableau[idx, index - 1] == 1:
+                    tab_voisin[idx, index] += 1
+                if tableau[idx + 1, index - 1] == 1:
+                    tab_voisin[idx, index] += 1
+
+                if tableau[idx - 1, index] == 1:
+                    tab_voisin[idx, index] += 1
+                if tableau[idx + 1, index] == 1:
+                    tab_voisin[idx, index] += 1
+
+            elif idx == 0:
+                if tableau[idx, index - 1] == 1:
+                    tab_voisin[idx, index] += 1
+                if tableau[idx, index + 1] == 1:
+                    tab_voisin[idx, index] += 1
+
+                if tableau[idx + 1, index - 1] == 1:
+                    tab_voisin[idx, index] += 1
+                if tableau[idx + 1, index] == 1:
+                    tab_voisin[idx, index] += 1
+                if tableau[idx + 1, index + 1] == 1:
+                    tab_voisin[idx, index] += 1
+
+            elif idx == NB_CELLULES_Y - 1:
+                if tableau[idx, index - 1] == 1:
+                    tab_voisin[idx, index] += 1
+                if tableau[idx, index + 1] == 1:
+                    tab_voisin[idx, index] += 1
+
+                if tableau[idx - 1, index - 1] == 1:
+                    tab_voisin[idx, index] += 1
+                if tableau[idx - 1, index] == 1:
+                    tab_voisin[idx, index] += 1
+                if tableau[idx - 1, index + 1] == 1:
+                    tab_voisin[idx, index] += 1
+
+            else:
+                if tableau[idx - 1, index - 1] == 1:
+                    tab_voisin[idx, index] += 1
+                if tableau[idx - 1, index] == 1:
+                    tab_voisin[idx, index] += 1
+                if tableau[idx - 1, index + 1] == 1:
+                    tab_voisin[idx, index] += 1
+
+                if tableau[idx, index - 1] == 1:
+                    tab_voisin[idx, index] += 1
+                if tableau[idx, index + 1] == 1:
+                    tab_voisin[idx, index] += 1
+
+                if tableau[idx + 1, index - 1] == 1:
+                    tab_voisin[idx, index] += 1
+                if tableau[idx + 1, index] == 1:
+                    tab_voisin[idx, index] += 1
+                if tableau[idx + 1, index + 1] == 1:
+                    tab_voisin[idx, index] += 1
+
+    tab = tab_voisin
+    # print(tab_voisin)
+    return tab
 
 
-
-def canon(): #fonction dessinant le célèbre canon à planeur de Bill Gosper
-    dico_case[0*c,5*c]=1
-    dico_case[0*c,6*c]=1
-    dico_case[1*c,5*c]=1
-    dico_case[1*c,6*c]=1
-    dico_case[10*c,5*c]=1
-    dico_case[10*c,6*c]=1
-    dico_case[10*c,7*c]=1
-    dico_case[11*c,4*c]=1
-    dico_case[11*c,8*c]=1
-    dico_case[12*c,3*c]=1
-    dico_case[12*c,9*c]=1
-    dico_case[13*c,3*c]=1
-    dico_case[13*c,9*c]=1
-    dico_case[14*c,6*c]=1
-    dico_case[15*c,4*c]=1
-    dico_case[15*c,8*c]=1
-    dico_case[16*c,5*c]=1
-    dico_case[16*c,6*c]=1
-    dico_case[16*c,7*c]=1
-    dico_case[17*c,6*c]=1
-    dico_case[20*c,3*c]=1
-    dico_case[20*c,4*c]=1
-    dico_case[20*c,5*c]=1
-    dico_case[21*c,3*c]=1
-    dico_case[21*c,4*c]=1
-    dico_case[21*c,5*c]=1
-    dico_case[22*c,2*c]=1
-    dico_case[22*c,6*c]=1
-    dico_case[24*c,1*c]=1
-    dico_case[24*c,2*c]=1
-    dico_case[24*c,6*c]=1
-    dico_case[24*c,7*c]=1
-    dico_case[34*c,3*c]=1
-    dico_case[34*c,4*c]=1
-    dico_case[35*c,3*c]=1
-    dico_case[35*c,4*c]=1
-    go()
-
-
-
-
-
-
-
-
-
-
-
-
+def get_new_positions(tableau, voisins):
+    '''
+    Obtient les nouvelles positions de cellules à partir du nombre de voisins
+    :param tableau: tableau à analyser
+    :return:
+    '''
+    global compteur_population
+    tab = np.zeros((NB_CELLULES_X, NB_CELLULES_Y))
+    for idx, row in enumerate(voisins):
+        for index, cell in enumerate(row):
+            if cell == 2:
+                if (tableau[idx, index] == 1):
+                    tab[idx, index] = 1
+            elif cell == 3:
+                tab[idx, index] = 1
+    # print(tab)
+    compteur_population = np.sum(tab)
+    return tab
 
 
 def go():
     "demarrage de l'animation"
-    global flag
+    global flag, compteur_generation
     if flag == 0:
         flag = 1
         play()
+
 
 def stop():
     "arret de l'animation"
     global flag
     flag = 0
 
-def play(): # fonction comptant le nombre de cellule vivantes autour de chaque cellules
-    global flag, vitesse
-    v = 0
-    while v != width / c:
-        w = 0
-        while w != height / c:
-            x = v * c
-            y = w * c
 
-            # cas spéciaux
-            # les coins
-            if x == 0 and y == 0: # coin haut-gauche
-                compt_viv = 0
-                if dico_case[x, y+c] == 1:
-                    compt_viv += 1
-                if dico_case[x+c, y] == 1:
-                    compt_viv += 1
-                if dico_case[x+c, y+c] == 1:
-                    compt_viv += 1
-                dico_etat[x,y] = compt_viv
-            elif x == 0 and y == int(height - c): # coin bas-gauche
-                compt_viv = 0
-                if dico_case[x, y-c] == 1:
-                    compt_viv += 1
-                if dico_case[x+c, y-c] == 1:
-                    compt_viv += 1
-                if dico_case[x+c, y] == 1:
-                    compt_viv += 1
-                dico_etat[x,y] = compt_viv
-            elif x == int(width - c) and y == 0: # coin haut-droit
-                compt_viv = 0
-                if dico_case[x-c, y] == 1:
-                    compt_viv += 1
-                if dico_case[x-c, y+c] == 1:
-                    compt_viv += 1
-                if dico_case[x, y+c] == 1:
-                    compt_viv += 1
-                dico_etat[x,y] = compt_viv
-            elif x == int(width - c) and y == int(height - c): # coin bas-droit
-                compt_viv = 0
-                if dico_case[x-c, y-c] == 1:
-                    compt_viv += 1
-                if dico_case[x-c, y] == 1:
-                    compt_viv += 1
-                if dico_case[x, y-c] == 1:
-                    compt_viv += 1
-                dico_etat[x,y] = compt_viv
+def remise_a_zero():
+    global tableau, canevas1, flag, compteur_generation, compteur_population
+    compteur_generation = 0
+    flag = 0
+    tableau = np.random.randint(0, 1, size=(NB_CELLULES_X, NB_CELLULES_Y))
+    compteur_population = np.sum(tableau)
+    damier(canevas1)
+    colorie(tableau, canevas1)
+    chaine1.configure(text="Génération: {}".format(compteur_generation))
+    chaine2.configure(text="Population: {}".format(compteur_population))
+    # chaine.pack(side=tk.RIGHT)
 
-            # les bords
-            elif x == 0 and 0 < y < int(height - c): # bord gauche
-                compt_viv = 0
-                if dico_case[x, y-c] == 1:
-                    compt_viv += 1
-                if dico_case[x, y+c] == 1:
-                    compt_viv += 1
-                if dico_case[x+c, y-c] == 1:
-                    compt_viv += 1
-                if dico_case[x+c, y] == 1:
-                    compt_viv += 1
-                if dico_case[x+c, y+c] == 1:
-                    compt_viv += 1
-                dico_etat[x,y] = compt_viv
-            elif x == int(width - c) and 0 < y < int(height - c): # bord droit
-                compt_viv = 0
-                if dico_case[x-c, y-c] == 1:
-                    compt_viv += 1
-                if dico_case[x-c, y] == 1:
-                    compt_viv += 1
-                if dico_case[x-c, y+c] == 1:
-                    compt_viv += 1
-                if dico_case[x, y-c] == 1:
-                    compt_viv += 1
-                if dico_case[x, y+c] == 1:
-                    compt_viv += 1
-                dico_etat[x,y] = compt_viv
-            elif 0 < x < int(width -c) and y == 0: # bord haut
-                compt_viv = 0
-                if dico_case[x-c, y] == 1:
-                    compt_viv += 1
-                if dico_case[x-c, y+c] == 1:
-                    compt_viv += 1
-                if dico_case[x, y+c] == 1:
-                    compt_viv += 1
-                if dico_case[x+c, y] == 1:
-                    compt_viv += 1
-                if dico_case[x+c, y+c] == 1:
-                    compt_viv += 1
-                dico_etat[x,y] = compt_viv
-            elif 0 < x < int(width -c) and y == int(height - c): # bord gauche
-                compt_viv = 0
-                if dico_case[x-c, y-c] == 1:
-                    compt_viv += 1
-                if dico_case[x-c, y] == 1:
-                    compt_viv += 1
-                if dico_case[x, y-c] == 1:
-                    compt_viv += 1
-                if dico_case[x+c, y-c] == 1:
-                    compt_viv += 1
-                if dico_case[x+c, y] == 1:
-                    compt_viv += 1
-                dico_etat[x,y] = compt_viv
 
-            # cas généraux
-            else:
-                compt_viv = 0
-                if dico_case[x-c, y-c] == 1:
-                    compt_viv += 1
-                if dico_case[x-c, y] == 1:
-                    compt_viv += 1
-                if dico_case[x-c, y+c] == 1:
-                    compt_viv += 1
-                if dico_case[x, y-c] == 1:
-                    compt_viv += 1
-                if dico_case[x, y+c] == 1:
-                    compt_viv += 1
-                if dico_case[x+c, y-c] == 1:
-                    compt_viv += 1
-                if dico_case[x+c, y] == 1:
-                    compt_viv += 1
-                if dico_case[x+c, y+c] == 1:
-                    compt_viv += 1
-                dico_etat[x,y] = compt_viv
+def aleatoire():
+    global tableau, canevas1, flag, compteur_generation, compteur_population
+    flag = 0
+    stop()
+    remise_a_zero()
+    tableau = np.random.randint(0, 2, size=(NB_CELLULES_X, NB_CELLULES_Y))
+    compteur_population = np.sum(tableau)
+    damier(canevas1)
+    colorie(tableau,canevas1)
+    chaine1.configure(text="Génération: {}".format(compteur_generation))
+    chaine2.configure(text="Population: {}".format(compteur_population))
+    #play()
 
-            w += 1
-        v += 1
 
-    redessiner()
+
+def play():
+    global flag, tableau, compteur_generation
+    colorie(tableau, canevas1)
+    damier(canevas1)
+
+    total = np.sum(tableau)
+    tab = get_voisins(tableau)
+    tableau = get_new_positions(tableau, tab)
+    damier(canevas1)
+    colorie(tableau, canevas1)
+
     if flag > 0:
-        fen1.after(vitesse, play)
-
-def redessiner(): # fonction redessiant le tableau à partir de dico_etat
-    can1.delete(ALL)
-    damier()
-    t = 0
-    while t != width / c:
-        u = 0
-        while u != height / c:
-            x = t * c
-            y = u * c
-            if dico_etat[x,y] == 3 or dico_etat[x,y] == 2:
-                dico_case[x,y] = 1
-                can1.create_rectangle(x,y,x+c,y+c,fill='black')
-            #elif dico_etat[x,y] == 2:
-            #    if dico_case[x,y] == 1:
-            #        can1.create_rectangle(x,y,x+c,y+c,fill='black')
-            #    else:
-            #        can1.create_rectangle(x,y,x+c,y+c,fill='white')
-            else:
-                dico_case[x,y] = 0
-                can1.create_rectangle(x,y,x+c,y+c,fill='white')
-            u += 1
-        t += 1
+        compteur_generation += 1
+        chaine1.configure(text="Génération: {}".format(compteur_generation))
+        chaine2.configure(text="Population: {}".format(compteur_population))
+        fenetre1.after(VITESSE, play)
 
 
+fenetre1 = tk.Tk()
+canevas1 = tk.Canvas(fenetre1, width=WIDTH, height=HEIGHT, bg='white')
 
-# les differentes variables
+canevas1.bind("<Button-1>", click_gauche)
+canevas1.bind("<Button-3>", click_droit)
 
-# taille de la grille
-height = 800
-width = 800
+damier(canevas1)
 
-# taille des cellulles
-c = 20
-
-# vitesse de l'animation
-vitesse = 5000
-
-flag = 0
-dico_etat2 = {}
-dico_etat = {} # disctionnaire contenant le nombre de cellules vivantes autour de chaque cellule
-dico_case = {} # dictionnaire contenant les coordonnées de chaque cellules et une valeur 0 ou 1 si elles sont respectivement mortes ou vivantes
+tableau = np.random.randint(0, 1, size=(NB_CELLULES_X, NB_CELLULES_Y))
+colorie(tableau, canevas1)
 
 
-# intiialisation des cellules mortes
-def reinitialise():
-    i = 0
-    while i != width / c:
-        j = 0
-        while j != height / c:
-            x = i * c
-            y = j * c
-            dico_case[x,y] = 0
-            j += 1
-        i += 1
+b1 = tk.Button(fenetre1, text='PLAY!', command=go)
+b1.pack(side=tk.LEFT, padx=3, pady=3)
+b2 = tk.Button(fenetre1, text='STOP!', command=stop)
+b2.pack(side=tk.LEFT, padx=3, pady=3)
+b3 = tk.Button(fenetre1, text='remise à 0!', command=remise_a_zero)
+b3.pack(side=tk.LEFT, padx=3, pady=3)
+b3 = tk.Button(fenetre1, text='Aléatoire', command=aleatoire)
+b3.pack(side=tk.LEFT, padx=3, pady=3)
 
+chaine1 = tk.Label(fenetre1)
+chaine1.configure(text="Génération: {}".format(compteur_generation))
+chaine1.pack(side=tk.RIGHT)
+chaine2 = tk.Label(fenetre1)
+chaine2.configure(text="Population: {}".format(compteur_population))
+chaine2.pack(side=tk.RIGHT)
 
-reinitialise()
-
-# programme
-fen1 = Tk()
-
-can1 = Canvas(fen1,width=width,height=height,bg='white')
-can1.bind("<Button-1>", click_gauche)
-can1.bind("<Button-3>", click_droit)
-can1.pack(side=TOP,padx=5,pady=5)
-
-damier()
-
-b1 = Button(fen1,text='GO!', command=go)
-b2 = Button(fen1, text ='Stop', command=stop)
-b4 = Button(fen1, text ='remise  à 0', command=reinitialise)
-
-b1.pack(side=LEFT,padx=3,pady=3)
-b2.pack(side=LEFT,padx=3,pady=3)
-b4.pack(side=LEFT,padx=3,pady=3)
-
-b3 = Button(fen1, text ='Canon planeur', command=canon)
-b3.pack(side =LEFT, padx =3, pady =3)
-
-entree = Entry(fen1)
-entree.bind("<Return>", change_vit)
-entree.pack(side=RIGHT)
-
-chaine = Label(fen1)
-chaine.configure(text = "Attente entre chaque étape (ms) :")
-chaine.pack(side =RIGHT)
-
-fen1.mainloop()
+fenetre1.mainloop()
